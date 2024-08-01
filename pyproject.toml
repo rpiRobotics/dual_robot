@@ -8,7 +8,8 @@ version = "0.1.0"
 description = "Dual Arm Coordinated Trajectory Helper Functions."
 
 packages = [
-    { include = "dual_robot", from = "src" }
+    { include = "dual_robot", from = "src" },
+    { include = "redundancy_resolution_dual", from = "src" }
 ]
 
 authors = ["Honglu He <heh6@rpi.edu>",]
@@ -25,3 +26,4 @@ repository = "https://github.com/hehonglu123/dual_robot"
 python = ">=3.8,<3.12"
 numpy = "<2.0.0"
 general_robotics_toolbox = "^0.7.2"
+qpsolvers = "^4.3.2"

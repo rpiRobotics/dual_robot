@@ -31,10 +31,12 @@ def form_relative_path(curve_js1,curve_js2,robot1,robot2):
 		curve_exe_R1.append(pose1_now.R)
 		curve_exe_R2.append(pose2_now.R)
 
+		pose1_world_now=robot1.fwd(curve_js1[i],world=True)
 		pose2_world_now=robot2.fwd(curve_js2[i],world=True)
 
-		relative_path_exe.append(np.dot(pose2_world_now.R.T,pose1_now.p-pose2_world_now.p))
-		relative_path_exe_R.append(pose2_world_now.R.T@pose1_now.R)
+		relative_path_exe.append(np.dot(pose2_world_now.R.T,pose1_world_now.p-pose2_world_now.p))
+		relative_path_exe_R.append(pose2_world_now.R.T@pose1_world_now.R)
+
 	return np.array(curve_exe1),np.array(curve_exe2), np.array(curve_exe_R1),np.array(curve_exe_R2),np.array(relative_path_exe),np.array(relative_path_exe_R)
 
 def calc_individual_speed(vd_relative,lam1,lam2,lam_relative,breakpoints):
@@ -64,3 +66,10 @@ def cmd_speed_profile(breakpoints,s1_all,s2_all):
 		s2_cmd.extend([s2_all[i]]*(breakpoints[i]-breakpoints[i-1]))
 	return np.array(s1_cmd).flatten(),np.array(s2_cmd).flatten()
 
+def gen_motion_program_dual(lam1,lam2,lam_relative,q1,q2,v,waypoint_distance=10):
+
+	num_points=max(2,int(lam_relative[-1]/waypoint_distance))
+	breakpoints=np.linspace(0,len(q1)-1,num=num_points).astype(int)
+	s1_all,s2_all=calc_individual_speed(v,lam1,lam2,lam_relative,breakpoints)
+
+	return q1[breakpoints],q2[breakpoints],s1_all,s2_all
