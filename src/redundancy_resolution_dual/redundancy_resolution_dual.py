@@ -39,8 +39,8 @@ class redundancy_resolution_dual(object):
 			Kq[len(self.robot1.upper_limit):,len(self.robot1.upper_limit):]=w2*np.eye(len(self.robot2.upper_limit))		#larger weights for second robot for it moves slower
 			lim_factor=1e-4
 
-			q_cur1=q_init1
-			q_cur2=q_init2
+			q_cur1=copy.deepcopy(q_init1)
+			q_cur2=copy.deepcopy(q_init2)
 
 			for i in range(len(self.curve)):
 				try:
@@ -156,8 +156,8 @@ class redundancy_resolution_dual(object):
 			Kq[len(self.robot1.upper_limit):,len(self.robot1.upper_limit):]=w2*np.eye(len(self.robot2.upper_limit))		#larger weights for second robot for it moves slower
 			lim_factor=1e-4
 
-			q_cur1=q_init1
-			q_cur2=q_init2
+			q_cur1=copy.deepcopy(q_init1)
+			q_cur2=copy.deepcopy(q_init2)
 
 			for i in range(len(self.curve)):
 				# print(i)
