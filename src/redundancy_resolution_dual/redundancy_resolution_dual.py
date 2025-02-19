@@ -1,9 +1,9 @@
 import numpy as np
 from general_robotics_toolbox import *
-import traceback, time, copy
+import traceback, time
 from qpsolvers import solve_qp
 from scipy.optimize import differential_evolution
-
+from copy import deepcopy
 
 ###Redundancy resolution in R2 tool frame
 class redundancy_resolution_dual(object):
@@ -14,7 +14,7 @@ class redundancy_resolution_dual(object):
 		self.curve=curve
 		self.curve_ori=curve_ori
 
-	def dual_arm_5dof_stepwise(self,q_init1,q_init2,w1=0.01,w2=0.01):
+	def dual_arm_5dof_stepwise(self,q_init1,q_init2,w1=0.01,w2=0.01,tolerance=0.01):
 			###curve: x,y,z
 			###curve_normal: i,j,k
 			###q_init1: initial joint position for robot1 guess, no need to match perfectly
@@ -39,14 +39,14 @@ class redundancy_resolution_dual(object):
 			Kq[len(self.robot1.upper_limit):,len(self.robot1.upper_limit):]=w2*np.eye(len(self.robot2.upper_limit))		#larger weights for second robot for it moves slower
 			lim_factor=1e-4
 
-			q_cur1=copy.deepcopy(q_init1)
-			q_cur2=copy.deepcopy(q_init2)
+			q_cur1=deepcopy(q_init1)
+			q_cur2=deepcopy(q_init2)
 
 			for i in range(len(self.curve)):
 				try:
 					now=time.time()
 					error_fb=999
-					while error_fb>0.01:
+					while error_fb>tolerance:
 						###timeout guard
 						if time.time()-now>1:
 							raise Exception("QP Timeout")
@@ -59,7 +59,7 @@ class redundancy_resolution_dual(object):
 						Ep=self.curve[i]-p_cur
 						R_cur=np.dot(pose2_world_now.R.T,pose1_world_now.R)
 
-						error_fb=np.linalg.norm(Ep-self.curve[i])+np.linalg.norm(R_cur[:,-1]-curve_normal[i])	
+						error_fb=np.linalg.norm(Ep)+np.linalg.norm(R_cur[:,-1]-curve_normal[i])	
 
 
 						########################################################QP formation###########################################
@@ -94,10 +94,16 @@ class redundancy_resolution_dual(object):
 
 				except:
 					traceback.print_exc()
+					from matplotlib import pyplot as plt
+					print("Error at step",i)
+					plt.plot(q_out1)
+					plt.plot(q_out2)
+					plt.title("Trajectory until error at step "+str(i))
+					plt.show()
 					raise Exception("QP failed")
 
-				q_out1.append(q_cur1)
-				q_out2.append(q_cur2)
+				q_out1.append(deepcopy(q_cur1))
+				q_out2.append(deepcopy(q_cur2))
 
 			q_out1=np.array(q_out1)[1:]
 			q_out2=np.array(q_out2)[1:]
@@ -132,7 +138,7 @@ class redundancy_resolution_dual(object):
 
 		return q_out1, q_out2
 
-	def dual_arm_6dof_stepwise(self,q_init1,q_init2,w1=0.01,w2=0.01):
+	def dual_arm_6dof_stepwise(self,q_init1,q_init2,w1=0.01,w2=0.01,tolerance=0.001):
 			###curve: x,y,z
 			###curve_R: Nx3x3 rotation matrix
 			###q_init1: initial joint position for robot1 guess, no need to match perfectly
@@ -156,15 +162,15 @@ class redundancy_resolution_dual(object):
 			Kq[len(self.robot1.upper_limit):,len(self.robot1.upper_limit):]=w2*np.eye(len(self.robot2.upper_limit))		#larger weights for second robot for it moves slower
 			lim_factor=1e-4
 
-			q_cur1=copy.deepcopy(q_init1)
-			q_cur2=copy.deepcopy(q_init2)
+			q_cur1=deepcopy(q_init1)
+			q_cur2=deepcopy(q_init2)
 
 			for i in range(len(self.curve)):
 				# print(i)
 				try:
 					now=time.time()
 					error_fb=999
-					while error_fb>0.001:
+					while error_fb>tolerance:
 						###timeout guard
 						if time.time()-now>1:
 							raise Exception("QP Timeout")
@@ -201,7 +207,7 @@ class redundancy_resolution_dual(object):
 						H=(H+np.transpose(H))/2
 
 						k,theta = R2rot(ER)
-						wd=np.sin(theta/2)*k 
+						wd=np.sin(theta/2)*np.array(k)
 						
 
 						f=-np.dot(np.transpose(J_all_p),Ep)-Kw*np.dot(np.transpose(J_all_R),wd)
@@ -214,10 +220,16 @@ class redundancy_resolution_dual(object):
 
 				except:
 					traceback.print_exc()
-					break
+					from matplotlib import pyplot as plt
+					print("Error at step",i)
+					plt.plot(q_out1)
+					plt.plot(q_out2)
+					plt.title("Trajectory until error at step "+str(i))
+					plt.show()
+					raise Exception("QP failed")
 
-				q_out1.append(copy.deepcopy(q_cur1))
-				q_out2.append(copy.deepcopy(q_cur2))
+				q_out1.append(deepcopy(q_cur1))
+				q_out2.append(deepcopy(q_cur2))
 
 			q_out1=np.array(q_out1)[1:]
 			q_out2=np.array(q_out2)[1:]
